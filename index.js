@@ -93,6 +93,40 @@ async function run() {
       next();
     };
 
+    // --- 5. AUTHENTICATION ROUTES ---
+
+    // Login: Verify Firebase token and set HTTP-only cookie
+    app.post("/auth/login", async (req, res) => {
+      const { token } = req.body;
+      try {
+        // Verify again for security
+        await admin.auth().verifyIdToken(token);
+
+        // Set cookie (Max age: 1 hour)
+        res
+          .cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+            maxAge: 3600000,
+          })
+          .send({ success: true });
+      } catch (error) {
+        res.status(401).send({ message: "Unauthorized" });
+      }
+    });
+
+    // Logout: Clear cookie
+    app.post("/auth/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
