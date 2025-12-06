@@ -127,6 +127,53 @@ async function run() {
         .send({ success: true });
     });
 
+    // --- 6. USER ROUTES ---
+
+    // Create/Update User
+    app.post("/users", async (req, res) => {
+      try {
+        const user = req.body;
+
+        // Safety Check: Ensure email exists
+        if (!user.email) {
+          return res.status(400).send({ message: "Email is required" });
+        }
+
+        const query = { email: user.email };
+        const existingUser = await usersCollection.findOne(query);
+
+        if (existingUser) {
+          return res.send({ message: "User already exists", insertedId: null });
+        }
+
+        const result = await usersCollection.insertOne({
+          name: user.name || "Anonymous", // Fallback if name is missing
+          email: user.email,
+          photoURL: user.photoURL || "",
+          role: user.role || "borrower",
+          status: "active",
+          timestamp: new Date(),
+        });
+        res.send(result);
+      } catch (error) {
+        console.error("Error in POST /users:", error); // Logs error to Server Terminal
+        res
+          .status(500)
+          .send({ message: "Internal Server Error", error: error.message });
+      }
+    });
+
+    // Get Current User Info & Role
+    app.get("/users/me/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (req.user.email !== email)
+        return res.status(403).send({ message: "Forbidden" });
+
+      const query = { email: email };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
