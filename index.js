@@ -188,6 +188,24 @@ async function run() {
       const result = await usersCollection.find(query).toArray();
       res.send(result);
     });
+    // ADMIN: Update User Role/Status
+    app.patch(
+      "/users/admin/update/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const { role, status } = req.body;
+        const filter = { _id: new ObjectId(id) };
+
+        let updateDoc = { $set: {} };
+        if (role) updateDoc.$set.role = role;
+        if (status) updateDoc.$set.status = status;
+
+        const result = await usersCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
