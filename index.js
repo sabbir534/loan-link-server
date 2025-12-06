@@ -257,6 +257,26 @@ async function run() {
         res.send(result);
       }
     );
+    // ADMIN: Update Loan (Optional but requested feature)
+    app.patch("/loans/:id", verifyToken, verifyManager, async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+      delete updateData._id; // Prevent updating ID
+
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { $set: updateData };
+
+      const result = await loansCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // ADMIN/MANAGER: Delete Loan
+    app.delete("/loans/:id", verifyToken, verifyManager, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await loansCollection.deleteOne(query);
+      res.send(result);
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
