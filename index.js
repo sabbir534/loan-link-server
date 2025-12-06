@@ -78,6 +78,21 @@ async function run() {
       next();
     };
 
+    // C. Verify Manager Role
+    const verifyManager = async (req, res, next) => {
+      const email = req.user.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isManager = user?.role === "manager";
+      // Allow Admin to access Manager routes as well if needed, otherwise strict check
+      if (!isManager && user?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ message: "Forbidden access: Managers only" });
+      }
+      next();
+    };
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
