@@ -277,6 +277,99 @@ async function run() {
       const result = await loansCollection.deleteOne(query);
       res.send(result);
     });
+    // --- 8. APPLICATION ROUTES ---
+
+    // BORROWER: Apply for Loan
+    app.post("/applications", verifyToken, async (req, res) => {
+      const application = req.body;
+
+      // Enforce default status
+      application.status = "pending";
+      application.feeStatus = "unpaid";
+      application.appliedDate = new Date();
+
+      const result = await applicationsCollection.insertOne(application);
+      res.send(result);
+    });
+
+    // BORROWER: Get My Applications
+    app.get("/applications/my-applications", verifyToken, async (req, res) => {
+      const email = req.user.email;
+      const query = { applicantEmail: email };
+      const result = await applicationsCollection
+        .find(query)
+        .sort({ appliedDate: -1 })
+        .toArray();
+      res.send(result);
+    });
+
+    // MANAGER: Get All Pending Applications
+    app.get(
+      "/applications/manager/pending",
+      verifyToken,
+      verifyManager,
+      async (req, res) => {
+        const query = { status: "pending" };
+        const result = await applicationsCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // MANAGER: Approve/Reject Application
+    app.patch(
+      "/applications/manager/status/:id",
+      verifyToken,
+      verifyManager,
+      async (req, res) => {
+        const id = req.params.id;
+        const { status } = req.body; // 'approved' or 'rejected'
+        const filter = { _id: new ObjectId(id) };
+
+        const updateDoc = {
+          $set: {
+            status: status,
+            processedAt: new Date(),
+          },
+        };
+        const result = await applicationsCollection.updateOne(
+          filter,
+          updateDoc
+        );
+        res.send(result);
+      }
+    );
+
+    // ADMIN: Get All Applications (With filtering)
+    app.get(
+      "/applications/admin/all",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const { status } = req.query;
+        let query = {};
+        if (status) query.status = status;
+
+        const result = await applicationsCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // --- 9. PAYMENT ROUTES (STRIPE) ---
+
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
