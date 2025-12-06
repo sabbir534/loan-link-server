@@ -173,7 +173,21 @@ async function run() {
       const result = await usersCollection.findOne(query);
       res.send(result);
     });
-
+    // ADMIN: Get All Users (With Search)
+    app.get("/users/admin/all", verifyToken, verifyAdmin, async (req, res) => {
+      const { search } = req.query;
+      let query = {};
+      if (search) {
+        query = {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        };
+      }
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
