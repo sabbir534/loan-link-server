@@ -44,6 +44,29 @@ async function run() {
     const usersCollection = db.collection("users");
     const loansCollection = db.collection("loans");
     const applicationsCollection = db.collection("applications");
+
+    // A. Verify Token (Firebase Admin)
+    const verifyToken = async (req, res, next) => {
+      const token = req.cookies?.token;
+      if (!token) {
+        return res
+          .status(401)
+          .send({ message: "Unauthorized access: No token" });
+      }
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.user = decodedToken;
+        next();
+      } catch (error) {
+        return res
+          .status(401)
+          .send({ message: "Unauthorized access: Invalid token" });
+      }
+    };
+
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // await client.close();
   }
