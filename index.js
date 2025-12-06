@@ -64,6 +64,20 @@ async function run() {
       }
     };
 
+    // B. Verify Admin Role
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.user.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res
+          .status(403)
+          .send({ message: "Forbidden access: Admins only" });
+      }
+      next();
+    };
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
