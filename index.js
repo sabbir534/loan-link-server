@@ -227,6 +227,36 @@ async function run() {
 
       res.send({ loans: result, total });
     });
+    // PUBLIC/PRIVATE: Get Single Loan
+    app.get("/loans/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await loansCollection.findOne(query);
+      res.send(result);
+    });
+
+    // MANAGER: Add New Loan
+    app.post("/loans", verifyToken, verifyManager, async (req, res) => {
+      const loanData = req.body;
+      // Add timestamp
+      loanData.createdAt = new Date();
+      const result = await loansCollection.insertOne(loanData);
+      res.send(result);
+    });
+
+    // MANAGER: Get Loans Added by Him
+    app.get(
+      "/loans/manager/my-loans",
+      verifyToken,
+      verifyManager,
+      async (req, res) => {
+        const email = req.user.email;
+        // Ideally you store "addedBy: email" in the loan document
+        const query = { addedBy: email };
+        const result = await loansCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
