@@ -206,6 +206,28 @@ async function run() {
         res.send(result);
       }
     );
+    // PUBLIC: Get All Loans (Search, Filter, Pagination)
+    app.get("/loans", async (req, res) => {
+      const { category, search, page = 0, limit = 10 } = req.query;
+
+      let query = {};
+      if (category) query.category = category;
+      if (search) query.title = { $regex: search, $options: "i" };
+
+      const skip = parseInt(page) * parseInt(limit);
+
+      const result = await loansCollection
+        .find(query)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .toArray();
+
+      // Also return total count for pagination
+      const total = await loansCollection.countDocuments(query);
+
+      res.send({ loans: result, total });
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
